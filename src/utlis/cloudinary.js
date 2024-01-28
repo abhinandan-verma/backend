@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from "cloudinary"
 import fs from "fs"
+import { asyncHandler } from "./asyncHandler";
 
 
 
@@ -27,4 +28,34 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-export { uploadOnCloudinary }
+const deleteFromCloudinary = async(publicIds) => {
+    try {
+        // delete image files
+        const deleteImageFile = await cloudinary.api.delete_resources(
+            publicIds, 
+            {
+                type: "upload",
+                resource_type: "image"
+            })
+
+        // delete Video files
+        const deleteVideoFile = await cloudinary.api.delete_resources(
+            publicIds,
+            {
+                type: "upload",
+                resource_type: "video"
+            }
+        )
+        return { deleteImageFile, deleteVideoFile }
+
+    } catch (error) {
+        console.log("Error deleting image from cloudinary: ", error?.message)
+        return null
+    }
+}
+
+export
+    { 
+        uploadOnCloudinary, 
+        deleteFromCloudinary
+    }
