@@ -11,9 +11,13 @@ const commentSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Video"
         },
-        omner: {
+        owner: {
             type: Schema.model.ObjectId,
             ref: "User"
+        },
+        tweet: {
+            type: Schema.Types.ObjectId,
+            ref: "Tweet"
         }
     },
     {
