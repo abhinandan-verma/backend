@@ -5,6 +5,9 @@ import { User } from "../models/user.model.js";
 
 
 export const verifyJWT = asyncHandler(async (req, _, next) => {
+
+      // request has the cookie accessToken as we have used 
+      // the cookie-parser middleware app.use(cookieParser())
   try {
     const token =   req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
   
@@ -12,6 +15,7 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
       throw new ApiError(401,"Unauthorised request")
     }
   
+    // if the token is valid, the decodedToken will contain the user's id
     const decodedToken =  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
   
     const user = await User.findById(decodedToken?._id)

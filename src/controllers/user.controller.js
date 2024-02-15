@@ -548,6 +548,9 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     )
 })
 
+// forgot password
+
+
 export {
         registerUser,
         loginUser,
