@@ -7,6 +7,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import { raw } from "express";
 import mongoose from "mongoose";
+import { sendEmail } from "../utils/services/sendEmail.service.js";
+import crypto from "crypto"
 
 const generateAccessAndRefreshTokens = async(userId) => {
   try{
@@ -27,6 +29,38 @@ const generateAccessAndRefreshTokens = async(userId) => {
     throw new ApiError(500, "Something went wrong while generating refresh and access tokens: ",error)
   }
 }
+
+// generate forgot password token
+
+const generateForgotPasswordToken = async(email) => {
+  const resetToken = crypto.randomBytes(20).toString("hex")
+  console.log("resetToken: ", resetToken)
+
+  const hashedToken = crypto
+  .createHash("sha256")
+  .update(resetToken)
+  .digest("hex")
+  console.log("hashedToken: ", hashedToken)
+
+  const user = await User.findOneAndUpdate(
+    {email: email.toLowerCase()},
+    {
+      passwordResetToken: hashedToken,
+      passwordResetTokenExpiry: Date.now() + 10 * 60 * 1000
+    },
+    {
+      new: true
+    }
+
+  )
+
+  if(!user){
+    throw new ApiError(404, "User does not exist")
+  }
+
+  return resetToken
+}
+
 const registerUser = asyncHandler( async (req, res) => {
     // get user details from the front-end
     // validation - not empty
@@ -58,6 +92,7 @@ const registerUser = asyncHandler( async (req, res) => {
    const existedUser = await User.findOne({
         $or: [{ username },{ email }]
     })
+
     if(existedUser){
       console.log(`DB ${existedUser.username} and postman: ${username}`);
         console.log("existedUser: ", existedUser)
@@ -103,8 +138,11 @@ const registerUser = asyncHandler( async (req, res) => {
 
    
    if(!avatar){
-    throw new ApiError(409, "Avatar file is required")
+    throw new ApiError(409, "Error while uploading avatar on cloudinary")
    }
+
+   console.log("avatar: ", avatar)
+   console.log("coverImage: ", coverImage)
   
   const user = await User.create({
     fullName,
@@ -125,6 +163,8 @@ const registerUser = asyncHandler( async (req, res) => {
     throw new ApiError(500, "something went wrong while registering the user")
   }
 
+  console.log("createdUser Success : ", createdUser)
+
   return res.status(201).json(
     new ApiResponse(200, createdUser, "User Registerd Successfully")
   )
@@ -141,7 +181,9 @@ const loginUser = asyncHandler(async  (req, res) => {
   // send cookies
 
   const {email, username, password } = req.body
+  console.log("username: ", username)
   console.log("email: ", email)
+  console.log("password: ", password)
 
   if(!username && !email){
     throw new ApiError(400, "username or email is required")
@@ -154,11 +196,15 @@ const loginUser = asyncHandler(async  (req, res) => {
     throw new ApiError(404, "User does not exist")
   }
 
+  console.log("user: ", user)
+
  const isPasswordValid = await user.isPasswordCorrect(password)
 
  if(!isPasswordValid){
   throw new ApiError(401, "Password Incorrect!")
 }
+
+console.log("Password is correct: ", isPasswordValid)
 
 const {accessToken, refreshToken} = 
     await generateAccessAndRefreshTokens(user._id)
@@ -184,6 +230,9 @@ const {accessToken, refreshToken} =
       secure: true
     }
 
+    console.log("options: ", options) 
+    console.log("loggedInUser: ", loggedInUser)
+
     return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -202,6 +251,15 @@ const {accessToken, refreshToken} =
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
+
+  const user = await User.findById(req.user._id)
+
+  if(!user){
+    throw new ApiError(404, "User does not exist")
+  }
+
+  console.log("user: ", user)
+
  await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -219,6 +277,10 @@ const logoutUser = asyncHandler(async (req, res) => {
     secure: true
   }
 
+  console.log("options: ", options)
+
+  console.log("logoutUser: ", req.user)
+
   return res
   .status(200)
   .clearCookie("accessToken", options)
@@ -227,7 +289,11 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken
+
+  const refreshToken = req.cookies.re
+  const incomingRefreshToken = req.user?.refreshToken
+
+  console.log("incomingRefreshToken: ", incomingRefreshToken)
 
   if(!incomingRefreshToken){
     throw new ApiError(401, "Unauthorized Request")
@@ -243,6 +309,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
   
     if(incomingRefreshToken !== user?.refreshToken){
+      console.log("Refresh Token is expired or Used")
       throw new ApiError(401, "Refresh Token is expired or Used")
     }
   
@@ -253,6 +320,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   
     const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
   
+    console.log("accessToken: ", accessToken)
+    console.log("newRefreshToken: ", newRefreshToken)
+
     return res.
     status(200)
     .cookie("accessToken", accessToken, options)
@@ -432,6 +502,8 @@ const getUserChannelProfile = asyncHandler(async( req, res) => {
       throw new ApiError(400, "username is missing")
     }
 
+    console.log("username: ", username)
+
    const channel = await User.aggregate([
     {
       $match: {
@@ -552,7 +624,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
       throw new ApiError(404, "Watch history does not exist")
     }
 
-    console.log("user: ", user)
+    console.log("warch History user: ", user)
 
     return res.status(200)
     .json(
@@ -563,57 +635,52 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     )
 })
 
-// forgot password
+// forgot password user
+
 const forgotPassword = asyncHandler(async(req, res) => {
   const {email} = req.body
   if(!email){
     throw new ApiError(400, "Email is required")
   }
 
-  const user = await User.findOne( {email: email.toLowerCase()})
+  const user = await User.findOne({email: email.toLowerCase()})
 
   if(!user){
     throw new ApiError(404, "User does not exist")
   }
-  // generate reset token
-  const resetToken = user.generatePasswordResetToken()
-  console.log("resetToken: ", resetToken)
 
-  await user.save({validateBeforeSave: false})
   console.log("user: ", user)
 
-  // send email with reset token
-  const resetPasswordUrl = `${process.env.CORS_ORIGIN}/reset-password/${resetToken}`
+  const resetToken = await generateForgotPasswordToken(email)
 
-  const subject = "Reset Password"
-  const message = `You can reset the password by <a href = ${resetPasswordUrl} 
-  target = "_blank">Reset your password</a>.\n If you have not requested this, kindly ignore it.`
+  console.log("resetToken: ", resetToken)
 
-  try{
-    await sendEmail(email, subject, message);
+  const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/auth/resetpassword/${resetToken}`
+
+  console.log("resetUrl: ", resetUrl)
+
+  const message = `You are receiving this email because you ${email} has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password reset token",
+      text: message
+    })
 
     return res
     .status(200)
     .json(
-      new ApiResponse(
-        200,
-        {resetToken},
-        `Reset password has been sent to ${email} successfully`
-      )
+      new ApiResponse(200, {}, "Password reset token sent to email")
     )
-  }catch(error){
+  } catch (error) {
     user.passwordResetToken = undefined
     user.passwordResetTokenExpiry = undefined
-    //save in the database
     await user.save({validateBeforeSave: false})
-    console.log(error)
-    throw new ApiError(
-      500,
-      error.message || "something went wrong while sending reset email, try again"
-    )
+    throw new ApiError(500, "Error while sending email")
   }
-}
-)
+})
+
 
 // reset the password
 const resetPassword = asyncHandler(async(req, res) => {
