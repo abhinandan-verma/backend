@@ -11,8 +11,10 @@ import {
          updateUserCoverImage, 
          getUserChannelProfile, 
          getWatchHistory,
-          
+        forgotPassword,
+         resetPassword
         } from "../controllers/user.controller.js";
+import { registerValidator} from "../middlewares/UserAuthValidator.middleware.js";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -29,7 +31,8 @@ router.route("/register").post(
             maxCount: 1
         }
     ]),
-    registerUser)
+    registerUser
+    )
 
 router.route("/login").post(loginUser)
 
@@ -42,8 +45,10 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar)
 router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
+router.route("/reset-password").post(forgotPassword)
 
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
-router.route("/history").get(verifyJWT, getWatchHistory)
+router.route("/watchhistory").get(verifyJWT, getWatchHistory)
+router.route("/reset/:resetToken").post(resetPassword)
 
 export default router

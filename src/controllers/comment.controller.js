@@ -3,8 +3,8 @@ import {Comment} from "../models/comment.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {Video} from "../models/video.model.js"
 import {Tweet} from "../models/tweet.model.js"
+import {Video} from "../models/video.model.js"
 
 // get all comments for a video
 const getVideoComments = asyncHandler(async (req, res) => {

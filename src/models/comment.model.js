@@ -12,7 +12,7 @@ const commentSchema = new Schema(
             ref: "Video"
         },
         owner: {
-            type: Schema.model.ObjectId,
+            type: Schema.Types.ObjectId,
             ref: "User"
         },
         tweet: {

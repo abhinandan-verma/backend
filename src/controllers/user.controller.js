@@ -1,9 +1,9 @@
 
-import {asyncHandler} from "../utlis/asyncHandler.js"
-import {ApiError} from "../utlis/ApiError.js"
+import {asyncHandler} from "../utils/asyncHandler.js"
+import {ApiError} from "../utils/ApiError.js"
 import {User } from "../models/user.model.js"
-import {uploadOnCloudinary, deleteFromCloudinary} from "../utlis/cloudinary.js"
-import { ApiResponse } from "../utlis/ApiResponse.js";
+import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import { raw } from "express";
 import mongoose from "mongoose";
@@ -131,6 +131,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
 })
 
+// login the current user
 const loginUser = asyncHandler(async  (req, res) => {
   // req body -> data
   // username or email
@@ -496,7 +497,15 @@ const getUserChannelProfile = asyncHandler(async( req, res) => {
    )
 })
 
+// get watch history
 const getWatchHistory = asyncHandler(async(req, res) => {
+
+  const user1 = await User.findById(req.user._id)
+
+    if(!user1){
+      throw new ApiError(404, "User does not exist")
+    }
+
     const user = await User.aggregate([
       {
         $match: {
@@ -538,6 +547,12 @@ const getWatchHistory = asyncHandler(async(req, res) => {
         }
       }
     ])
+
+    if(!user?.length){
+      throw new ApiError(404, "Watch history does not exist")
+    }
+
+    console.log("user: ", user)
 
     return res.status(200)
     .json(
