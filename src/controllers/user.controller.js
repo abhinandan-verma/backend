@@ -549,7 +549,98 @@ const getWatchHistory = asyncHandler(async(req, res) => {
 })
 
 // forgot password
+const forgotPassword = asyncHandler(async(req, res) => {
+  const {email} = req.body
+  if(!email){
+    throw new ApiError(400, "Email is required")
+  }
 
+  const user = await User.findOne( {email: email.toLowerCase()})
+
+  if(!user){
+    throw new ApiError(404, "User does not exist")
+  }
+  // generate reset token
+  const resetToken = user.generatePasswordResetToken()
+  console.log("resetToken: ", resetToken)
+
+  await user.save({validateBeforeSave: false})
+  console.log("user: ", user)
+
+  // send email with reset token
+  const resetPasswordUrl = `${process.env.CORS_ORIGIN}/reset-password/${resetToken}`
+
+  const subject = "Reset Password"
+  const message = `You can reset the password by <a href = ${resetPasswordUrl} 
+  target = "_blank">Reset your password</a>.\n If you have not requested this, kindly ignore it.`
+
+  try{
+    await sendEmail(email, subject, message);
+
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {resetToken},
+        `Reset password has been sent to ${email} successfully`
+      )
+    )
+  }catch(error){
+    user.passwordResetToken = undefined
+    user.passwordResetTokenExpiry = undefined
+    //save in the database
+    await user.save({validateBeforeSave: false})
+    console.log(error)
+    throw new ApiError(
+      500,
+      error.message || "something went wrong while sending reset email, try again"
+    )
+  }
+}
+)
+
+// reset the password
+const resetPassword = asyncHandler(async(req, res) => {
+  const {resetToken} = req.params
+  const {password} = req.body
+
+  if(!resetToken){
+    throw new ApiError(400, "Invalid reset token")
+  }
+
+  // hashing the reset token using sha256 as we have hashed the token in the database using sha256  
+  const hashedToken = crypto
+  .createHash("sha256")
+  .update(resetToken).
+  digest("hex")
+
+  console.log("hashedToken: ", hashedToken)
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetTokenExpiry: {$gt: Date.now()}
+  })
+
+  console.log("user: ", user)
+
+  if(!user){
+    throw new ApiError(400, "Invalid or expired reset token")
+  }
+
+  user.password = password
+  user.passwordResetToken = undefined
+  user.passwordResetTokenExpiry = undefined
+  
+  await user.save({validateBeforeSave: false})
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, {}, "Password reset successfully")
+  )
+}
+)
 
 export {
         registerUser,
@@ -562,5 +653,7 @@ export {
         updateUserAvatar,
         updateUserCoverImage,
         getUserChannelProfile,
-        getWatchHistory
+        getWatchHistory,
+        forgotPassword,
+        resetPassword
       }
