@@ -9,6 +9,7 @@ import { raw } from "express";
 import mongoose from "mongoose";
 import { sendEmail } from "../utils/services/sendEmail.service.js";
 import crypto from "crypto"
+import { bcrypt } from "bcrypt";
 
 const generateAccessAndRefreshTokens = async(userId) => {
   try{
@@ -290,8 +291,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
 
-  const refreshToken = req.cookies.re
-  const incomingRefreshToken = req.user?.refreshToken
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
   console.log("incomingRefreshToken: ", incomingRefreshToken)
 
@@ -302,6 +302,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const decodedToken 
         = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
   
+    console.log("decodedToken: ", decodedToken)
+
     const user = await User.findById(decodedToken?._id)
   
     if(!user){
@@ -317,6 +319,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true
     }
+
+    console.log("options: ", options)
   
     const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
   
