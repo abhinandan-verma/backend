@@ -18,6 +18,7 @@
     "prettier": "^3.2.4"
   },
   "dependencies": {
+    "@colors/colors": "^1.6.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^1.41.3",
     "color": "^4.2.3",

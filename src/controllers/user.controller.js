@@ -5,11 +5,9 @@ import {User } from "../models/user.model.js"
 import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
-import { raw } from "express";
 import mongoose from "mongoose";
 import { sendEmail } from "../utils/services/sendEmail.service.js";
 import crypto from "crypto"
-import { bcrypt } from "bcrypt";
 
 const generateAccessAndRefreshTokens = async(userId) => {
   try{
@@ -35,13 +33,13 @@ const generateAccessAndRefreshTokens = async(userId) => {
 
 const generateForgotPasswordToken = async(email) => {
   const resetToken = crypto.randomBytes(20).toString("hex")
-  console.log("resetToken: ", resetToken)
+  console.log("resetToken: ".brightBlue, resetToken)
 
   const hashedToken = crypto
   .createHash("sha256")
   .update(resetToken)
   .digest("hex")
-  console.log("hashedToken: ", hashedToken)
+  console.log("hashedToken: ".brightMagenta.bold, hashedToken)
 
   const user = await User.findOneAndUpdate(
     {email: email.toLowerCase()},
@@ -74,10 +72,10 @@ const registerUser = asyncHandler( async (req, res) => {
     // return res
 
     const { fullName, email,username, password } = req.body
-    console.log("email: ", email)
-    console.log("username: ", username)
+    console.log("email: ".cyan, email)
+    console.log("username: ".magenta, username)
     console.log("password: ", password)
-    console.log("fullname: ", fullName)
+    console.log("fullname: ".yellow, fullName)
 
     // 2: neccessary checks if null or empty
     if(
@@ -348,7 +346,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler(async(req, res) => {
   const {oldPassword, newPassword} = req.body
   if (!(oldPassword || newPassword)) {
-    throw new ApiErrorHandler(401, "Old and New Password are required");
+    throw new ApiError(401, "Old and New Password are required".red.bold);
   }
 
   try {
@@ -359,6 +357,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
       throw new ApiError(400, "Invalid Old Password")
     }
   
+    console.log("isPasswordCorrect: ".america.bgBlue, isPasswordCorrect)
     user.password = newPassword
     await user.save({validateBeforeSave: false})
   
