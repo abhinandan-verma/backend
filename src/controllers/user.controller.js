@@ -2,12 +2,13 @@
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {ApiError} from "../utils/ApiError.js"
 import {User } from "../models/user.model.js"
-import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, deleteFromCloudinary, deleteImageFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
 import { sendEmail } from "../utils/services/sendEmail.service.js";
 import crypto from "crypto"
+import {v2 as cloudinary} from "cloudinary"
 
 const generateAccessAndRefreshTokens = async(userId) => {
   try{
@@ -376,51 +377,75 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 const getCurrentUser = asyncHandler(async(req, res) => {
   const user = req?.user
   if(!user){
-      throw new ApiError(401, "User does not exist or logged in ")
+      throw new ApiError(401, "User does not exist or logged in")
   }
   else
   {
+    console.log("fetch user request : ".brightYellow.italic, user)
     return res
     .status(200)
-    .json(new ApiResponse(200, req.user, "Current user fetched successfully".green.bold ))
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
   }
 })
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
-  const {fullName, email} = req. body
+  const {fullName, username} = req. body
   const userId = req.user?._id
 
-  if(!fullName || !email){
+  if(!fullName || !username){
     throw new ApiError(400, "All fields are required")
   }
+  console.log("fullName: ".brightYellow, fullName)
+  console.log("username: ".brightYellow, username)
+
   if(!userId){
     throw new ApiError(404, "user not found")
   }
+
+  console.log("userId: ".bgBrightBlue, userId)
 
   const user = User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
         fullName: fullName,
-        email: email
+        username: username
       }
     },
-    {new: true}
+    {
+      new: true
+    }
 
     ).select("-pasword")
 
+    console.log("user: ".magenta.bold, user)
+
     return res
     .status(200)
-    .json(new ApiResponse(200, user, "Account Details Updated Successfully"))
+    .json(
+      new ApiResponse(
+        200, 
+        user?.email, 
+        user?.username,
+        "Account details updated successfully")
+    )
+    
 })
+
+
 
 const updateUserAvatar = asyncHandler(async(req, res) => 
 {
  const avatarLocalPath = await req.file?.path
  const userId = req.user?._id
+ const user1 = await User.findById(userId)
 
- console.log("avatarLocalPath: ", avatarLocalPath)
- console.log("userid: ", userId)
+ console.log("user1: ".green.bold, user1)
+
+ console.log("avatarPublicId: ".brightCyan.bold, user1.avatarPublicId)
+
+ console.log("avatarLocalPath: ".brightGreen.bold, avatarLocalPath)
+ console.log("userid: ".cyan, userId)
 
  if(!avatarLocalPath){
   throw new ApiError(400, "Avatar File is missing")
@@ -429,20 +454,23 @@ const updateUserAvatar = asyncHandler(async(req, res) =>
   throw new ApiError(401, "invalid reqiest for avatar")
  }
 
- const {deletePreviousImage} = await deleteFromCloudinary(
-  [
-    user.avatarPublicId
-  ]
-)
+//  const {deletePreviousImage} = await uploadOnCloudinary.uploader.destroy(user1.avatarPublicId || "", {  
+//   invalidate: true
+// })
 
-if(!deletePreviousImage){
-  throw new ApiError(500, "Error while deleting avatar from cloudinary")
-}
+// if(!deletePreviousImage){
+//   console.log("deletePreviousImage: ".red.bold, deletePreviousImage)
+//   throw new ApiError(500, "Error while deleting avatar from cloudinary")
+// }
+
+// console.log("deletePreviousImage: ".green.bold, deletePreviousImage)
 
  const avatar = await uploadOnCloudinary(avatarLocalPath)
  if(!avatar.url){
     throw new ApiError(400, "Error while uploading avatar")
  }
+
+ console.log("avatarurl: ".cyan.bold, avatar)
 
  const user = await User.findByIdAndUpdate(
   userId,
@@ -454,6 +482,7 @@ if(!deletePreviousImage){
   {new: true}
  ).select("-password")
 
+ console.log("user: ".yellow.bold, user)
 
  return res.status(200)
  .json(

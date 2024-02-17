@@ -48,7 +48,23 @@ const deleteFromCloudinary = async(publicIds) => {
         return { deleteImageFile, deleteVideoFile }
 
     } catch (error) {
-        console.log("Error deleting image from cloudinary: ", error?.message)
+        console.log("Error deleting image from cloudinary: ".red.bold, error?.message)
+        return null
+    }
+}
+
+const deleteImageFromCloudinary = async(publicIds) => {
+    try {
+        // delete image files
+        const deleteImageFile = await cloudinary.api.delete_resources(
+            publicIds, 
+            {
+                type: "upload",
+                resource_type: "image"
+            })
+        return deleteImageFile
+    } catch (error) {
+        console.log("Error deleting image from cloudinary: ".red.bold, error?.message)
         return null
     }
 }
@@ -56,5 +72,6 @@ const deleteFromCloudinary = async(publicIds) => {
 export
     { 
         uploadOnCloudinary, 
-        deleteFromCloudinary
+        deleteFromCloudinary,
+        deleteImageFromCloudinary
     }
