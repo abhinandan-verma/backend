@@ -465,6 +465,14 @@ const updateUserAvatar = asyncHandler(async(req, res) =>
 
 // console.log("deletePreviousImage: ".green.bold, deletePreviousImage)
 
+const deleteSuccess = await deleteImageFromCloudinary(user1.avatar)
+
+console.log("deleteSuccess: ".brightYellow.bold, deleteSuccess)
+
+if(!deleteSuccess){
+  throw new ApiError(500, "Error while deleting avatar from cloudinary")
+}
+
  const avatar = await uploadOnCloudinary(avatarLocalPath)
  if(!avatar.url){
     throw new ApiError(400, "Error while uploading avatar")
@@ -498,19 +506,21 @@ const updateUserCoverImage = asyncHandler(async(req, res) =>
   throw new ApiError(400, "CoverImage File is missing")
  }
 
- const {deletePreviousImage} = await deleteFromCloudinary(
-  [
-    user.coverImagePublicId
-  ]
-)
+ const deletePreviousImage = await deleteImageFromCloudinary(req.user?.coverImage)
+
 if(!deletePreviousImage){
   throw new ApiError(500, "Error while deleting coverImage from cloudinary")
 }
 
+console.log("deletePreviousImage: ".green.bold, deletePreviousImage)
+
  const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
  if(!coverImage.url){
     throw new ApiError(400, "Error while uploading coverImage")
  }
+
+ console.log("coverImage: ".cyan.bold, coverImage)
 
  const user = await User.findByIdAndUpdate(
   req.user?._id,
@@ -519,8 +529,12 @@ if(!deletePreviousImage){
      coverImage: coverImage.url
     }
   },
-  {new: true}
+  {
+    new: true
+  }
  ).select("-password")
+
+ console.log("user: ".bgBrightBlue.bold, user)
 
  return res.status(200)
  .json(
@@ -588,6 +602,9 @@ const getUserChannelProfile = asyncHandler(async( req, res) => {
       }
     }
    ])
+
+   console.log("channel: ", channel)
+   
    if(!channel?.length){
     throw new ApiError(404, "Channel does no exist")
    }

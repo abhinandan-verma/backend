@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from "cloudinary"
 import fs from "fs"
+import {extractPublicId} from "cloudinary-build-url";
 import { asyncHandler } from "./asyncHandler.js";
 
 
@@ -53,22 +54,19 @@ const deleteFromCloudinary = async(publicIds) => {
     }
 }
 
-const deleteImageFromCloudinary = async(publicIds) => {
-    try {
-        // delete image files
-        const deleteImageFile = await cloudinary.api.delete_resources(
-            publicIds, 
-            {
-                type: "upload",
-                resource_type: "image"
-            })
-        return deleteImageFile
-    } catch (error) {
-        console.log("Error deleting image from cloudinary: ".red.bold, error?.message)
+const deleteImageFromCloudinary = async(url, resource_type = "image") => {
+    const publicId = extractPublicId(url)
+    try{
+        const response = await cloudinary.uploader.destroy(publicId, {
+            resource_type: resource_type
+        })
+        return response
+    }catch(err){
+        console.log("Error deleting image from cloudinary: ".red.bold, err?.message)
         return null
     }
-}
 
+}
 export
     { 
         uploadOnCloudinary, 
