@@ -1,3 +1,4 @@
-# backend with NodeJs by Abhinandan
+# backend of YouTube Clone by Abhinandan
 
-This is a backend project through javascript
+The project os inspired from the **chai-backend** project by @hitesh-chaudhary
+
