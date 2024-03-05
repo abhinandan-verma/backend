@@ -2,10 +2,6 @@
 
 This project marks a significant milestone in my backend development journey, where I've delved into various technologies and frameworks to build a comprehensive video hosting website enriched with tweet functionalities. Using Node.js, Express.js, MongoDB, Mongoose, JWT, Multer, Bcrypt, Cloudinary, and many more, i have create a robust backend for a feature-rich video hosting website with tweet functionalities.
 
-#### Note - The Frontend part (V-Tube, an Android App) is kept seperate to make the version control & project files organised.
-#### Front-end is in progress & will be completed soon 
-#### Link -> https://github.com/abhinandan-verma/YouTube
-
 
 ## Features
 
@@ -67,6 +63,12 @@ Make sure to set these environment variables in your deployment environment or p
 https://documenter.getpostman.com/view/31685048/2s9YsQ6oj4
 ## model link 
 https://app.eraser.io/workspace/pNGSqTCXzR2H5rJz9DOV?origin=share
+
+#### Note - The Frontend part (V-Tube, an Android App) is kept seperate to make the version control & project files organised.
+#### Front-end is in progress & will be completed soon 
+#### Link -> https://github.com/abhinandan-verma/YouTube
+
+
 ## Learning Journey
 This project reflects my commitment to learning, inspired by the teachings of Hitesh Choudhary. I diligently followed his "Chai aur Code" backend playlist, completing assignments that covered fundamental and advanced functionalities. The project incorporates best practices such as JWT, bcrypt, access tokens, and refresh tokens.
 ## Contributing
